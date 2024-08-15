@@ -1,0 +1,6 @@
+**/*.local
+**/*.local.*
+**/__pycache__/
+**/.ollama
+.venv
+static

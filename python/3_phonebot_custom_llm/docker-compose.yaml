@@ -1,0 +1,65 @@
+services:
+  web_backend:
+    build: .
+    ports:
+      - 4444:${BACKEND_PORT}
+    environment:
+      OLLAMA_HOST: "ollama/"
+    depends_on:
+      ollama_pull:
+        condition: service_completed_successfully
+      localtunnel:
+        condition: service_started
+    volumes:
+      - .:/app
+    command: poetry run fastapi dev python_phonebot/server.py --host 0.0.0.0 --port ${BACKEND_PORT}
+
+  web_frontend_build:
+    build: frontend/
+    volumes:
+      - ./frontend:/app
+      - ./static:/static
+    command: "bash -c 'bun dev'"
+
+  # To expose the websocket to the internet
+  # Needed for retell to communicate with our system
+  localtunnel:
+    build:
+      context: .
+      dockerfile: Dockerfile.localtunnel
+    command: bun run lt -s ${LLM_WS_PUBLIC_SUBDOMAIN} --port ${BACKEND_PORT} -l web_backend
+
+  ollama:
+    image: ollama/ollama
+    command: "serve"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    healthcheck:
+      start_period: 1m
+      start_interval: 5s
+      timeout: 1s
+      retries: 3
+      test: "ollama list > /dev/null 2>/dev/null || exit 1"
+
+    volumes:
+      - .ollama:/root/.ollama
+
+  # Pull the model before starting the web service
+  ollama_pull:
+    environment:
+      OLLAMA_HOST: "ollama/"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: no
+    image: ollama/ollama
+    command: "pull llama3.1"
+    volumes:
+      - .ollama:/root/.ollama

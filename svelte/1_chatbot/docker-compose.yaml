@@ -1,0 +1,49 @@
+services:
+  web:
+    build: .
+    ports:
+      - "4444:4444"
+    volumes:
+      - .:/app
+    environment:
+      OLLAMA_HOST: "ollama/"
+      PUBLIC_OLLAMA_HOST: "ollama/"
+    command: "bash -c 'bun dev --port 4444 --host'"
+    depends_on:
+      ollama_pull:
+        condition: service_completed_successfully
+
+  # Ollama layer for local model using Llama
+  ollama:
+    image: ollama/ollama
+    command: "serve"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      start_period: 1m
+      start_interval: 5s
+      timeout: 1s
+      retries: 3
+      test: "ollama list > /dev/null 2>/dev/null || exit 1"
+    volumes:
+      - .ollama:/root/.ollama
+    ports:
+      - 11434:11434
+
+  # Pull the model before starting the web service
+  ollama_pull:
+    environment:
+      OLLAMA_HOST: "ollama/"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: no
+    image: ollama/ollama
+    command: "pull llama3.1"
+    volumes:
+      - .ollama:/root/.ollama

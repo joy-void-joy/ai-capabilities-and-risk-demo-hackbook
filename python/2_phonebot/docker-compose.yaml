@@ -1,0 +1,15 @@
+services:
+  web_backend:
+    build: .
+    ports:
+      - 4444:4444
+    volumes:
+      - .:/app
+    command: poetry run fastapi dev python_phonebot/server.py --host 0.0.0.0 --port 4444
+
+  web_frontend_build:
+    build: ./frontend/
+    volumes:
+      - ./frontend:/app
+      - ./static:/static
+    command: "bash -c 'bun dev'"

@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "python-template"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.37.1"
+langchain-ollama = "^0.1.1"
+langchain-anthropic = "^0.1.22"
+langchain-openai = "^0.1.21"
+environs = "^11.0.0"
+
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.4.9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
